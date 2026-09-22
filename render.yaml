@@ -1,0 +1,54 @@
+# render.yaml — One-click Render.com deployment for MediFlow AI
+# Docs: https://render.com/docs/blueprint-spec
+
+services:
+  # ─────────────────────────────────────────────
+  # 🤖 Python FastAPI AI Microservice
+  # ─────────────────────────────────────────────
+  - type: web
+    name: mediflow-ai-service
+    runtime: python
+    rootDir: ai-service
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: ENVIRONMENT
+        value: production
+      # Add your LLM API key from Render dashboard
+      - key: GOOGLE_API_KEY
+        sync: false
+    healthCheckPath: /health
+    plan: free
+
+  # ─────────────────────────────────────────────
+  # ⚙️ Node.js Express Backend Gateway
+  # ─────────────────────────────────────────────
+  - type: web
+    name: mediflow-backend
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install && npm run build && npx prisma generate
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 5000
+      # Set these in Render dashboard → Environment tab
+      - key: DATABASE_URL
+        sync: false
+      - key: DIRECT_URL
+        sync: false
+      - key: JWT_SECRET
+        sync: false
+      - key: JWT_EXPIRES_IN
+        value: 7d
+      - key: AI_SERVICE_URL
+        fromService:
+          name: mediflow-ai-service
+          type: web
+          property: host
+      - key: CLIENT_URL
+        sync: false   # paste your Vercel frontend URL here
+    healthCheckPath: /health
+    plan: free
