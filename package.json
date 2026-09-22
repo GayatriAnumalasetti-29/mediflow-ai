@@ -1,0 +1,36 @@
+{
+  "name": "mediflow-ai-monorepo",
+  "version": "1.0.0",
+  "private": true,
+  "description": "MediFlow AI — Multimodal Hospital Patient Lifecycle Agent",
+  "workspaces": [
+    "shared",
+    "backend",
+    "frontend"
+  ],
+  "scripts": {
+    "dev:frontend": "npm --workspace=frontend run dev",
+    "dev:backend": "npm --workspace=backend run dev",
+    "dev:ai": "cd ai-service && python main.py",
+    "build:shared": "npm --workspace=shared run build",
+    "build:backend": "npm --workspace=backend run build",
+    "build:frontend": "npm --workspace=frontend run build",
+    "build": "npm run build:shared && npm run build:backend && npm run build:frontend",
+    "test": "npm --workspaces run test --if-present",
+    "lint": "npm --workspaces run lint --if-present"
+  },
+  "keywords": [
+    "healthcare",
+    "hospital-agent",
+    "multimodal",
+    "multilingual",
+    "ai-orchestration",
+    "patient-lifecycle",
+    "telehealth"
+  ],
+  "author": "MediFlow AI Team",
+  "license": "MIT",
+  "devDependencies": {
+    "typescript": "^5.4.5"
+  }
+}

@@ -1,0 +1,45 @@
+import { Router } from 'express';
+import authRoutes from './authRoutes';
+import patientRoutes from './patientRoutes';
+import doctorRoutes from './doctorRoutes';
+import appointmentRoutes from './appointmentRoutes';
+import accommodationRoutes from './accommodationRoutes';
+import prescriptionRoutes from './prescriptionRoutes';
+import medicationRoutes from './medicationRoutes';
+import dietRoutes from './dietRoutes';
+import therapyRoutes from './therapyRoutes';
+import billingRoutes from './billingRoutes';
+import followUpRoutes from './followUpRoutes';
+import notificationRoutes from './notificationRoutes';
+import aiRoutes from './aiRoutes';
+import consultationRoutes from './consultationRoutes';
+import carePlanRoutes from './carePlanRoutes';
+import recoveryRoutes from './recoveryRoutes';
+import auditRoutes from './auditRoutes';
+import testRoutes from './testRoutes';
+import bridgeRoutes from './bridgeRoutes';
+
+const router = Router();
+
+router.use('/bridge', bridgeRoutes);
+router.use('/auth', authRoutes);
+router.use('/patients', patientRoutes);
+router.use('/doctors', doctorRoutes);
+router.use('/appointments', appointmentRoutes);
+router.use('/accommodation', accommodationRoutes);
+router.use('/prescriptions', prescriptionRoutes);
+router.use('/medications', medicationRoutes);
+router.use('/diet', dietRoutes);
+router.use('/therapy', therapyRoutes);
+router.use('/billing', billingRoutes);
+router.use('/followup', followUpRoutes);
+router.use('/notifications', notificationRoutes);
+router.use('/ai', aiRoutes);
+router.use('/consultation', consultationRoutes);
+router.use('/consultations', consultationRoutes);
+router.use('/careplan', carePlanRoutes);
+router.use('/recovery', recoveryRoutes);
+router.use('/audit', auditRoutes);
+router.use('/test', testRoutes);
+
+export default router;

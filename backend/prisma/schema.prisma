@@ -1,0 +1,390 @@
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+enum UserRole {
+  PATIENT
+  DOCTOR
+  NURSE
+  ADMIN
+  STAFF
+}
+
+enum UrgencyLevel {
+  EMERGENCY
+  URGENT
+  ROUTINE
+}
+
+enum AppointmentStatus {
+  SCHEDULED
+  IN_QUEUE
+  IN_CONSULTATION
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum RoomCategory {
+  GENERAL_WARD
+  SEMI_PRIVATE
+  PRIVATE_DELUXE
+  ICU
+  EMERGENCY_OBSERVATION
+}
+
+enum BedStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  MAINTENANCE
+  CLEANING
+}
+
+enum VerificationStatus {
+  UNVERIFIED
+  VERIFIED_BY_PATIENT
+  VERIFIED_BY_STAFF
+  REJECTED
+}
+
+enum DoseStatus {
+  PENDING
+  TAKEN
+  SKIPPED
+  SNOOZED
+}
+
+enum BillingStatus {
+  PENDING
+  PARTIALLY_PAID
+  PAID
+  CANCELLED
+  INSURANCE_PENDING
+}
+
+enum BillItemCategory {
+  CONSULTATION
+  ACCOMMODATION
+  PROCEDURE
+  LAB_TEST
+  MEDICATION
+  THERAPY
+  NURSING_CARE
+  MISCELLANEOUS
+}
+
+enum EscalationSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+model User {
+  id           String      @id @default(uuid())
+  email        String      @unique
+  passwordHash String
+  name         String
+  phone        String?
+  role         UserRole    @default(PATIENT)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  patient      Patient?
+  doctor       Doctor?
+  auditLogs    AuditLog[]
+}
+
+model Patient {
+  id                 String              @id @default(uuid())
+  userId             String              @unique
+  user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  uhid               String              @unique
+  fullName           String
+  dateOfBirth        DateTime
+  age                Int
+  gender             String
+  bloodGroup         String?
+  contactNumber      String
+  emergencyContact   String?
+  address            String?
+  allergies          String[]            @default([])
+  chronicConditions  String[]            @default([])
+  currentUrgency     UrgencyLevel        @default(ROUTINE)
+  primaryLanguage    String              @default("en")
+  createdAt          DateTime            @default(now())
+  updatedAt          DateTime            @updatedAt
+  appointments       Appointment[]
+  admissions         Admission[]
+  prescriptions      Prescription[]
+  medicationSchedules MedicationSchedule[]
+  medicationDoses    MedicationDose[]
+  dietPlans          DietPlan[]
+  therapySessions    TherapySession[]
+  bills              Bill[]
+  followUpLogs       FollowUpLog[]
+  escalationAlerts   EscalationAlert[]
+}
+
+model Doctor {
+  id              String         @id @default(uuid())
+  userId          String         @unique
+  user            User           @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fullName        String
+  specialization  String
+  department      String
+  roomNumber      String
+  consultationFee Float          @default(500.0)
+  availableDays   String[]       @default(["Monday", "Tuesday", "Wednesday", "Thursday", "Friday"])
+  availableSlots  String[]       @default(["09:00", "09:30", "10:00", "10:30", "11:00", "14:00", "14:30", "15:00"])
+  languagesSpoken String[]       @default(["en", "te", "hi"])
+  appointments    Appointment[]
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  name        String   @unique
+  code        String   @unique
+  floor       Int
+  description String?
+}
+
+model Appointment {
+  id              String            @id @default(uuid())
+  patientId       String
+  patient         Patient           @relation(fields: [patientId], references: [id])
+  doctorId        String
+  doctor          Doctor            @relation(fields: [doctorId], references: [id])
+  department      String
+  appointmentDate DateTime
+  timeSlot        String
+  tokenNumber     Int
+  status          AppointmentStatus @default(SCHEDULED)
+  reasonForVisit  String
+  doctorNotes     String?
+  consultationFee Float
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+}
+
+model Room {
+  id            String       @id @default(uuid())
+  roomNumber    String       @unique
+  category      RoomCategory
+  floor         Int
+  totalBeds     Int
+  dailyRate     Float
+  amenities     String[]     @default([])
+  beds          Bed[]
+}
+
+model Bed {
+  id               String        @id @default(uuid())
+  bedNumber        String        @unique
+  roomId           String
+  room             Room          @relation(fields: [roomId], references: [id])
+  category         RoomCategory
+  floor            Int
+  dailyRate        Float
+  status           BedStatus     @default(AVAILABLE)
+  currentPatientId String?
+  admissions       Admission[]
+}
+
+model Admission {
+  id                 String       @id @default(uuid())
+  patientId          String
+  patient            Patient      @relation(fields: [patientId], references: [id])
+  bedId              String
+  bed                Bed          @relation(fields: [bedId], references: [id])
+  roomNumber         String
+  category           RoomCategory
+  admittedAt         DateTime     @default(now())
+  dischargedAt       DateTime?
+  expectedStayDays   Int          @default(3)
+  attendingDoctorId  String
+  totalCharges       Float        @default(0.0)
+}
+
+model Prescription {
+  id                 String             @id @default(uuid())
+  patientId          String
+  patient            Patient            @relation(fields: [patientId], references: [id])
+  doctorId           String?
+  doctorName         String?
+  imageUrl           String?
+  verificationStatus VerificationStatus @default(UNVERIFIED)
+  verifiedByUserId   String?
+  verifiedAt         DateTime?
+  ocrConfidence      Float              @default(0.0)
+  doctorNotes        String?
+  createdAt          DateTime           @default(now())
+  updatedAt          DateTime           @updatedAt
+  items              PrescriptionItem[]
+  schedules          MedicationSchedule[]
+}
+
+model PrescriptionItem {
+  id             String       @id @default(uuid())
+  prescriptionId String
+  prescription   Prescription @relation(fields: [prescriptionId], references: [id], onDelete: Cascade)
+  medicineName   String
+  genericName    String?
+  dosage         String
+  form           String       @default("TABLET")
+  frequency      String       @default("TWICE_DAILY")
+  frequencyLabel String
+  timing         String       @default("AFTER_MEALS")
+  durationDays   Int          @default(5)
+  instructions   String?
+  confidence     Float        @default(1.0)
+  isAmbiguous    Boolean      @default(false)
+}
+
+model MedicationSchedule {
+  id             String           @id @default(uuid())
+  patientId      String
+  patient        Patient          @relation(fields: [patientId], references: [id])
+  prescriptionId String
+  prescription   Prescription     @relation(fields: [prescriptionId], references: [id])
+  medicineName   String
+  dosage         String
+  frequency      String
+  timing         String
+  startDate      DateTime
+  endDate        DateTime
+  scheduledTimes String[]
+  instructions   String?
+  isActive       Boolean          @default(true)
+  doses          MedicationDose[]
+}
+
+model MedicationDose {
+  id            String             @id @default(uuid())
+  scheduleId    String
+  schedule      MedicationSchedule @relation(fields: [scheduleId], references: [id], onDelete: Cascade)
+  patientId     String
+  patient       Patient            @relation(fields: [patientId], references: [id])
+  medicineName  String
+  dosage        String
+  scheduledTime DateTime
+  status        DoseStatus         @default(PENDING)
+  confirmedAt   DateTime?
+  snoozedUntil  DateTime?
+  timingNote    String
+}
+
+model DietPlan {
+  id                  String   @id @default(uuid())
+  patientId           String
+  patient             Patient  @relation(fields: [patientId], references: [id])
+  prescribedById      String?
+  dietitianName       String?
+  planName            String
+  dailyCalorieTarget  Int      @default(2000)
+  mealsJson           Json
+  foodsToAvoid        String[] @default([])
+  allergensRestricted String[] @default([])
+  hydrationGoalLiters Float    @default(2.5)
+  startDate           DateTime @default(now())
+  endDate             DateTime?
+  isActive            Boolean  @default(true)
+}
+
+model TherapySession {
+  id                 String   @id @default(uuid())
+  patientId          String
+  patient            Patient  @relation(fields: [patientId], references: [id])
+  therapistId        String
+  therapistName      String
+  therapyType        String
+  scheduledDate      DateTime
+  timeSlot           String
+  attended           Boolean  @default(false)
+  therapistNotes     String?
+  patientFeedback    String?
+  exercisesJson      Json?
+  nextFollowUpDate   DateTime?
+}
+
+model Bill {
+  id               String        @id @default(uuid())
+  invoiceNumber    String        @unique
+  patientId        String
+  patient          Patient       @relation(fields: [patientId], references: [id])
+  subtotal         Float
+  taxAmount        Float
+  discountAmount   Float         @default(0.0)
+  totalPayable     Float
+  amountPaid       Float         @default(0.0)
+  balanceDue       Float
+  status           BillingStatus @default(PENDING)
+  insuranceClaimId String?
+  createdAt        DateTime      @default(now())
+  updatedAt        DateTime      @updatedAt
+  items            BillItem[]
+}
+
+model BillItem {
+  id                  String           @id @default(uuid())
+  billId              String
+  bill                Bill             @relation(fields: [billId], references: [id], onDelete: Cascade)
+  category            BillItemCategory
+  description         String
+  unitPrice           Float
+  quantity            Int              @default(1)
+  totalPrice          Float
+  authorizedByStaffId String?
+  dateAdded           DateTime         @default(now())
+}
+
+model FollowUpLog {
+  id                          String   @id @default(uuid())
+  patientId                   String
+  patient                     Patient  @relation(fields: [patientId], references: [id])
+  date                        DateTime @default(now())
+  patientReportedStatus       String
+  painLevelScore              Int      @default(0)
+  temperature                 Float?
+  symptomsReported            String[] @default([])
+  medicationAdherenceReported Boolean  @default(true)
+  dietAdherenceReported       Boolean  @default(true)
+  activityCompletedReported   Boolean  @default(true)
+  aiSentiment                 String   @default("NEUTRAL")
+  requiresStaffReview         Boolean  @default(false)
+  staffReviewNotes            String?
+  createdAt                   DateTime @default(now())
+}
+
+model EscalationAlert {
+  id                String             @id @default(uuid())
+  patientId         String
+  patient           Patient            @relation(fields: [patientId], references: [id])
+  severity          EscalationSeverity @default(HIGH)
+  triggerReason     String
+  reportedSymptoms  String[]           @default([])
+  sourceAgent       String
+  isResolved        Boolean            @default(false)
+  assignedStaffId   String?
+  resolvedAt        DateTime?
+  resolutionNotes   String?
+  createdAt         DateTime           @default(now())
+}
+
+model AuditLog {
+  id           String   @id @default(uuid())
+  userId       String?
+  user         User?    @relation(fields: [userId], references: [id])
+  userRole     String?
+  action       String
+  resource     String
+  resourceId   String?
+  detailsJson  Json?
+  ipAddress    String?
+  createdAt    DateTime @default(now())
+}
