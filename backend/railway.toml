@@ -1,0 +1,10 @@
+[build]
+# Build shared package first, then compile backend TypeScript
+buildCommand = "cd .. && npm install --workspaces && npm run build:shared && npm --workspace=backend run build && npm --workspace=backend run prisma:generate"
+
+[deploy]
+startCommand = "node dist/server.js"
+healthcheckPath = "/health"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
+restartPolicyMaxRetries = 3

@@ -1,0 +1,10 @@
+[build]
+# Build shared package + frontend from monorepo root
+buildCommand = "cd .. && npm install --workspaces && npm run build:shared && npm --workspace=frontend run build"
+
+[deploy]
+# Serve the static dist with a tiny static file server
+startCommand = "npx serve dist -s -l $PORT"
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "on_failure"
