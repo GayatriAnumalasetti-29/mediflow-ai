@@ -45,14 +45,32 @@ htmlcov/
 *.swo
 .DS_Store
 Thumbs.db
+desktop.ini
 
 # Database / Prisma
 prisma/*.db
 prisma/*.db-journal
 
 # Logs
-logs
+logs/
 *.log
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+lerna-debug.log*
+
+# Runtime data / persistence
+data/mediflow_db.json
+
+# Uploaded files (OCR/prescription images)
+backend/uploads/
+ai_service/uploads/
+
+# Shared package dist (auto-generated)
+shared/dist/
+
+# TypeScript build cache
+*.tsbuildinfo
+
+# Temporary / scratch files
+scratch/*.tmp
